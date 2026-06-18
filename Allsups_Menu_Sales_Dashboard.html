@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Allsup's Menu Sales Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --navy:    #0f172a;
+      --navy2:   #1e293b;
+      --indigo:  #6366f1;
+      --green:   #10b981;
+      --amber:   #f59e0b;
+      --red:     #ef4444;
+      --blue:    #3b82f6;
+      --text:    #0f172a;
+      --text2:   #475569;
+      --text3:   #94a3b8;
+      --border:  #e2e8f0;
+      --bg:      #f8fafc;
+      --card:    #ffffff;
+      --r:       12px;
+      --sh:      0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.05);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
+      padding: 22px 36px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      border-bottom: 3px solid var(--indigo);
+    }
+    .header-brand { display: flex; align-items: center; gap: 14px; }
+    .brand-icon {
+      width: 46px; height: 46px;
+      background: var(--indigo);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 800; color: #fff;
+    }
+    .brand-text .title { font-size: 1.25rem; font-weight: 800; color: #fff; letter-spacing: -0.4px; }
+    .brand-text .sub   { font-size: 0.78rem; color: rgba(255,255,255,0.45); margin-top: 2px; }
+
+    .header-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .filter-label { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.5); }
+    .filter-select {
+      appearance: none;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #fff;
+      padding: 8px 34px 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+    }
+    .filter-select option { background: #1e293b; color: #fff; }
+    .btn-reset {
+      background: rgba(239,68,68,0.15);
+      border: 1px solid rgba(239,68,68,0.35);
+      color: #fca5a5;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-reset:hover { background: rgba(239,68,68,0.25); }
+    .filter-badge {
+      display: none;
+      background: var(--indigo);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.3px;
+    }
+    .filter-badge.active { display: inline-block; }
+
+    /* ── Main Layout ── */
+    main { padding: 28px 36px; max-width: 1440px; margin: 0 auto; }
+
+    /* ── KPI Grid ── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .kpi-card {
+      background: var(--card);
+      border-radius: var(--r);
+      padding: 20px 22px;
+      box-shadow: var(--sh);
+      border: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 3px;
+    }
+    .kpi-card.c1::after { background: var(--indigo); }
+    .kpi-card.c2::after { background: var(--green); }
+    .kpi-card.c3::after { background: var(--amber); }
+    .kpi-card.c4::after { background: var(--blue); }
+    .kpi-label {
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.8px;
+      color: var(--text3); margin-bottom: 10px;
+    }
+    .kpi-value {
+      font-size: 2rem; font-weight: 800;
+      color: var(--text); letter-spacing: -1px; line-height: 1;
+    }
+    .kpi-sub { font-size: 12px; color: var(--text3); margin-top: 6px; font-weight: 500; }
+    .kpi-icon {
+      position: absolute; top: 16px; right: 18px;
+      font-size: 1.6rem; opacity: 0.1;
+    }
+
+    /* ── Section Titles ── */
+    .section-title {
+      font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 1px;
+      color: var(--text3); margin-bottom: 14px; margin-top: 8px;
+    }
+
+    /* ── Chart Cards ── */
+    .card {
+      background: var(--card);
+      border-radius: var(--r);
+      padding: 22px 24px;
+      box-shadow: var(--sh);
+      border: 1px solid var(--border);
+    }
+    .card-hd { margin-bottom: 16px; }
+    .card-hd h3 { font-size: 14px; font-weight: 700; color: var(--text); letter-spacing: -0.2px; }
+    .card-hd p  { font-size: 12px; color: var(--text3); margin-top: 3px; }
+
+    /* ── 2-col rows ── */
+    .row-2 {
+      display: grid;
+      grid-template-columns: 3fr 2fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .row-2-eq {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .row-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .full-row { margin-bottom: 16px; }
+
+    /* ── Legend Pills ── */
+    .legend-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .pill {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 600; color: var(--text2);
+      background: var(--bg); border: 1px solid var(--border);
+      padding: 3px 10px; border-radius: 20px;
+    }
+    .pill-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+    /* ── SWOT ── */
+    .swot-title {
+      font-size: 16px; font-weight: 800; color: var(--text);
+      margin-bottom: 4px; letter-spacing: -0.3px;
+    }
+    .swot-sub { font-size: 12px; color: var(--text3); margin-bottom: 18px; }
+
+    .swot-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .swot-card {
+      border-radius: var(--r);
+      padding: 22px 24px;
+      border: 1px solid;
+    }
+    .swot-card.s { background: #f0fdf4; border-color: #bbf7d0; }
+    .swot-card.w { background: #fff1f2; border-color: #fecdd3; }
+    .swot-card.o { background: #eff6ff; border-color: #bfdbfe; }
+    .swot-card.t { background: #fffbeb; border-color: #fde68a; }
+
+    .swot-head {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+    }
+    .swot-badge {
+      width: 36px; height: 36px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 900; color: #fff; flex-shrink: 0;
+    }
+    .swot-card.s .swot-badge { background: #16a34a; }
+    .swot-card.w .swot-badge { background: #dc2626; }
+    .swot-card.o .swot-badge { background: #2563eb; }
+    .swot-card.t .swot-badge { background: #d97706; }
+
+    .swot-label { font-size: 14px; font-weight: 800; }
+    .swot-card.s .swot-label { color: #14532d; }
+    .swot-card.w .swot-label { color: #7f1d1d; }
+    .swot-card.o .swot-label { color: #1e3a8a; }
+    .swot-card.t .swot-label { color: #78350f; }
+
+    .swot-sublabel { font-size: 11px; font-weight: 600; opacity: 0.6; margin-top: 1px; }
+
+    .swot-items { list-style: none; display: flex; flex-direction: column; gap: 9px; }
+    .swot-items li {
+      font-size: 13px; font-weight: 500; line-height: 1.5;
+      display: flex; gap: 8px; align-items: flex-start;
+    }
+    .swot-items li::before {
+      content: '';
+      width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 5px;
+    }
+    .swot-card.s li::before { background: #16a34a; }
+    .swot-card.w li::before { background: #dc2626; }
+    .swot-card.o li::before { background: #2563eb; }
+    .swot-card.t li::before { background: #d97706; }
+
+    .swot-card.s li { color: #166534; }
+    .swot-card.w li { color: #991b1b; }
+    .swot-card.o li { color: #1e40af; }
+    .swot-card.t li { color: #92400e; }
+
+    /* ── Manager Actions ── */
+    .action-list { display: flex; flex-direction: column; gap: 10px; }
+    .action-row {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 12px 14px; border-radius: 8px; border: 1px solid;
+    }
+    .action-row.high   { background: #fff1f2; border-color: #fecdd3; }
+    .action-row.medium { background: #fffbeb; border-color: #fde68a; }
+    .action-row.low    { background: #f8fafc; border-color: #e2e8f0; }
+    .action-prio {
+      font-size: 10px; font-weight: 800; letter-spacing: 0.5px;
+      padding: 3px 9px; border-radius: 20px; flex-shrink: 0; margin-top: 1px;
+    }
+    .action-row.high   .action-prio { background: #fecdd3; color: #9f1239; }
+    .action-row.medium .action-prio { background: #fde68a; color: #92400e; }
+    .action-row.low    .action-prio { background: #e2e8f0; color: #475569; }
+    .action-text { font-size: 13px; font-weight: 600; color: var(--text2); line-height: 1.4; }
+    .action-sub  { font-size: 11.5px; color: var(--text3); margin-top: 2px; }
+
+    /* ── Responsive ── */
+    @media (max-width: 1100px) {
+      .row-2  { grid-template-columns: 1fr; }
+      .row-3  { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 760px) {
+      main { padding: 18px 16px; }
+      .kpi-grid   { grid-template-columns: repeat(2, 1fr); }
+      .row-2-eq   { grid-template-columns: 1fr; }
+      .swot-grid  { grid-template-columns: 1fr; }
+      .row-3      { grid-template-columns: 1fr; }
+      .header     { padding: 18px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header class="header">
+  <div class="header-brand">
+    <div class="brand-icon">A</div>
+    <div class="brand-text">
+      <div class="title">Allsup's Menu Sales Dashboard</div>
+      <div class="sub">63 SKUs · 16 Categories · Total Revenue $34,621.40</div>
+    </div>
+  </div>
+  <div class="header-controls">
+    <span class="filter-label">Filter by Category</span>
+    <select class="filter-select" id="catFilter" onchange="applyFilter(this.value)">
+      <option value="All">All Categories</option>
+      <option>Beef burritos</option>
+      <option>Chicken flautas &amp; wraps</option>
+      <option>Chicken bites &amp; wings</option>
+      <option>Breakfast croissants</option>
+      <option>Sausage on a stick</option>
+      <option>Breakfast biscuits</option>
+      <option>Tacos &amp; Mexican snacks</option>
+      <option>Burgers</option>
+      <option>Fried cheese snacks</option>
+      <option>Chicken strips &amp; baskets</option>
+      <option>Corn dogs</option>
+      <option>Potato sides</option>
+      <option>Breakfast burritos</option>
+      <option>Specialty burritos</option>
+      <option>Chicken sandwiches</option>
+      <option>Other</option>
+    </select>
+    <span class="filter-badge" id="filterBadge">Filtered</span>
+    <button class="btn-reset" onclick="resetFilter()">✕ Reset</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- ── KPI Row ── -->
+  <div class="section-title">Key Performance Indicators</div>
+  <div class="kpi-grid" style="margin-bottom:24px;">
+    <div class="kpi-card c1">
+      <div class="kpi-icon">💰</div>
+      <div class="kpi-label">Total Revenue</div>
+      <div class="kpi-value" id="kpi-rev">$34,621</div>
+      <div class="kpi-sub" id="kpi-rev-sub">All 63 SKUs</div>
+    </div>
+    <div class="kpi-card c2">
+      <div class="kpi-icon">🛒</div>
+      <div class="kpi-label">Units Sold</div>
+      <div class="kpi-value" id="kpi-units">9,250</div>
+      <div class="kpi-sub" id="kpi-units-sub">Total items moved</div>
+    </div>
+    <div class="kpi-card c3">
+      <div class="kpi-icon">🏷️</div>
+      <div class="kpi-label">Avg Price / Unit</div>
+      <div class="kpi-value" id="kpi-avg">$3.74</div>
+      <div class="kpi-sub" id="kpi-avg-sub">Across all categories</div>
+    </div>
+    <div class="kpi-card c4">
+      <div class="kpi-icon">📦</div>
+      <div class="kpi-label">Active SKUs</div>
+      <div class="kpi-value" id="kpi-skus">63</div>
+      <div class="kpi-sub" id="kpi-skus-sub">Across 16 categories</div>
+    </div>
+  </div>
+
+  <!-- ── Category Revenue + Donut ── -->
+  <div class="section-title">Revenue Overview by Category</div>
+  <div class="row-2" style="margin-bottom:20px;">
+    <div class="card">
+      <div class="card-hd">
+        <h3>Revenue by Category</h3>
+        <p>Sorted by total revenue — all 16 categories</p>
+      </div>
+      <canvas id="catRevenueChart" height="210"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-hd">
+        <h3>Revenue Share</h3>
+        <p>% contribution per category</p>
+      </div>
+      <canvas id="donutChart" height="210"></canvas>
+    </div>
+  </div>
+
+  <!-- ── Top 5 / Bottom 5 ── -->
+  <div class="section-title" id="topBotLabel">Top 5 &amp; Bottom 5 Items — All Categories (by Revenue)</div>
+  <div class="row-2-eq" style="margin-bottom:20px;">
+    <div class="card">
+      <div class="card-hd">
+        <h3>🏆 Top 5 Items</h3>
+        <p id="top5sub">Highest revenue performers</p>
+      </div>
+      <canvas id="top5Chart" height="160"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-hd">
+        <h3>⚠️ Bottom 5 Items</h3>
+        <p id="bot5sub">Lowest revenue performers</p>
+      </div>
+      <canvas id="bot5Chart" height="160"></canvas>
+    </div>
+  </div>
+
+  <!-- ── Scatter + Bubble ── -->
+  <div class="section-title">Item-Level Performance Analysis</div>
+  <div class="row-2-eq" style="margin-bottom:20px;">
+    <div class="card">
+      <div class="card-hd">
+        <h3>Units Sold vs Revenue — Scatter</h3>
+        <p id="scatterSub">Each dot = one menu item · color = category · filtered view</p>
+      </div>
+      <canvas id="scatterChart" height="190"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-hd">
+        <h3>Category Efficiency — Bubble</h3>
+        <p>x = Avg Price · y = Revenue/SKU · size = Revenue share</p>
+      </div>
+      <canvas id="bubbleChart" height="190"></canvas>
+    </div>
+  </div>
+
+  <!-- ── Avg Price Bar + Radar ── -->
+  <div class="section-title">Category Benchmarking</div>
+  <div class="row-2-eq" style="margin-bottom:20px;">
+    <div class="card">
+      <div class="card-hd">
+        <h3>Avg Price per Unit by Category</h3>
+        <p>Higher price = stronger margin positioning</p>
+      </div>
+      <canvas id="avgPriceChart" height="200"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-hd">
+        <h3>Multi-Metric Radar — Top 6 Categories</h3>
+        <p>Revenue, Volume, Price, SKU Efficiency (normalized 0–100)</p>
+      </div>
+      <canvas id="radarChart" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- ── SWOT ── -->
+  <div class="swot-title">SWOT Analysis</div>
+  <div class="swot-sub">Strategic evaluation based on menu sales data · Beef burritos, Chicken, Breakfast, and underperforming SKUs</div>
+  <div class="swot-grid" style="margin-bottom:20px;">
+
+    <div class="swot-card s">
+      <div class="swot-head">
+        <div class="swot-badge">S</div>
+        <div>
+          <div class="swot-label">Strengths</div>
+          <div class="swot-sublabel">What's working well</div>
+        </div>
+      </div>
+      <ul class="swot-items">
+        <li>Beef burritos drive 27.4% of total revenue from just 3 SKUs — the most efficient category</li>
+        <li>Top 5 items generate $17,081 — 49.3% of all revenue from only 8% of the SKU count</li>
+        <li>Chicken Flautas is a standout #2 category (14.5% share) with only 2 SKUs</li>
+        <li>Chicken bites & wings command the highest avg price at $5.22 — premium positioning is working</li>
+        <li>Strong volume: Beef Bean Red Chili Burrito alone moved 2,290 units — proven demand</li>
+      </ul>
+    </div>
+
+    <div class="swot-card w">
+      <div class="swot-head">
+        <div class="swot-badge">W</div>
+        <div>
+          <div class="swot-label">Weaknesses</div>
+          <div class="swot-sublabel">Areas needing attention</div>
+        </div>
+      </div>
+      <ul class="swot-items">
+        <li>Burgers: 9 SKUs generating only $1,207 (3.5% share) — worst revenue-per-SKU in the menu</li>
+        <li>25 of 63 SKUs (40%) generate under $100 each — dead inventory creating operational drag</li>
+        <li>Chicken sandwiches: 4 SKUs totaling only $371 — barely justifying their menu slot</li>
+        <li>Single-item concentration risk: #1 item (Beef Bean Burrito) = 19.1% of ALL revenue</li>
+        <li>Breakfast burritos fragmented across 4 SKUs with combined $646 — low focus and output</li>
+      </ul>
+    </div>
+
+    <div class="swot-card o">
+      <div class="swot-head">
+        <div class="swot-badge">O</div>
+        <div>
+          <div class="swot-label">Opportunities</div>
+          <div class="swot-sublabel">Growth levers to pull</div>
+        </div>
+      </div>
+      <ul class="swot-items">
+        <li>Chicken wings 10pc sells at $11.81 avg — customers will pay premium; expand this tier</li>
+        <li>Specialty burritos: only 1 SKU, already $584 revenue — strong signal to expand the line</li>
+        <li>Breakfast croissants outperform biscuits despite same SKU count (5 each) — shift promotion focus</li>
+        <li>Sausage on a stick ranks 4th in units (578) but only 5th in revenue — promotion could unlock more</li>
+        <li>Fried cheese snacks: 3 SKUs, solid $1,163 revenue — room to add one premium SKU</li>
+      </ul>
+    </div>
+
+    <div class="swot-card t">
+      <div class="swot-head">
+        <div class="swot-badge">T</div>
+        <div>
+          <div class="swot-label">Threats</div>
+          <div class="swot-sublabel">Risks to address</div>
+        </div>
+      </div>
+      <ul class="swot-items">
+        <li>Menu bloat: 63 SKUs adds prep complexity and waste — bottom 25 SKUs generating under $100 each</li>
+        <li>Beef burrito supply dependency: one SKU disruption = 19% revenue at risk</li>
+        <li>Burger category competing against QSR players with better products and brand — losing the battle</li>
+        <li>Chicken sandwich segment (4 SKUs, $371 total) likely cannibalized by stronger chicken categories</li>
+        <li>Bottom 12 SKUs under $100 revenue may be creating customer confusion and inventory waste</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <!-- ── Manager Action Plan ── -->
+  <div class="section-title">Manager Action Plan</div>
+  <div class="card full-row">
+    <div class="card-hd">
+      <h3>Recommended Actions</h3>
+      <p>Priority-ranked based on sales data analysis</p>
+    </div>
+    <div class="action-list">
+      <div class="action-row high">
+        <span class="action-prio">HIGH</span>
+        <div>
+          <div class="action-text">Protect Beef Burritos — stock, visibility, and promotion priority</div>
+          <div class="action-sub">27.4% of revenue — any disruption has outsized impact</div>
+        </div>
+      </div>
+      <div class="action-row high">
+        <span class="action-prio">HIGH</span>
+        <div>
+          <div class="action-text">Flautas first for chicken — lead chicken promotions with Flautas, not sandwiches</div>
+          <div class="action-sub">Chicken Flautas: $4,655 · Chicken Sandwiches: $371 — the data is clear</div>
+        </div>
+      </div>
+      <div class="action-row high">
+        <span class="action-prio">HIGH</span>
+        <div>
+          <div class="action-text">Cut or consolidate chicken sandwiches — 4 SKUs, $371 total</div>
+          <div class="action-sub">Reduce to 1 best-seller and reassign shelf space to winning categories</div>
+        </div>
+      </div>
+      <div class="action-row medium">
+        <span class="action-prio">MEDIUM</span>
+        <div>
+          <div class="action-text">Promote Sausage on a Stick — strong volume, underpromoted</div>
+          <div class="action-sub">578 units sold but 6th in revenue — better placement can close the gap</div>
+        </div>
+      </div>
+      <div class="action-row medium">
+        <span class="action-prio">MEDIUM</span>
+        <div>
+          <div class="action-text">Consolidate breakfast menu — cut low-performing biscuit and burrito SKUs</div>
+          <div class="action-sub">Keep top croissant and biscuit items, retire Saus Croissant, Saus Egg Biscuit, and weaker burritos</div>
+        </div>
+      </div>
+      <div class="action-row low">
+        <span class="action-prio">LOW</span>
+        <div>
+          <div class="action-text">Remove bottom 12 SKUs — items under $100 revenue</div>
+          <div class="action-sub">Plan for next menu cycle: streamline to ~50 SKUs for better ops and customer clarity</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+Chart.defaults.font.family = "'Inter', sans-serif";
+Chart.defaults.color = '#94a3b8';
+
+/* ═══════════════════════════════════
+   DATA
+═══════════════════════════════════ */
+const ALL_ITEMS = [
+  { rank:1,  name:"Beef Bean Red Chili Burrito",  cat:"Beef burritos",             units:2290, rev:6628.34, avg:2.89 },
+  { rank:2,  name:"Chicken Chs Flautas",          cat:"Chicken flautas & wraps",   units:1177, rev:4655.25, avg:3.96 },
+  { rank:3,  name:"Beef Chimichanga",             cat:"Beef burritos",             units:561,  rev:2213.74, avg:3.95 },
+  { rank:4,  name:"Saus Egg Chs Croissant",      cat:"Breakfast croissants",      units:371,  rev:1830.29, avg:4.93 },
+  { rank:5,  name:"Hmstly Chicken Bites",        cat:"Chicken bites & wings",     units:366,  rev:1764.33, avg:4.82 },
+  { rank:6,  name:"Spicy Chicken Bites",         cat:"Chicken bites & wings",     units:263,  rev:1275.37, avg:4.85 },
+  { rank:7,  name:"Mini Tacos",                  cat:"Tacos & Mexican snacks",    units:318,  rev:1224.82, avg:3.85 },
+  { rank:8,  name:"Jalap Saus On A Stick",       cat:"Sausage on a stick",        units:239,  rev:1148.62, avg:4.81 },
+  { rank:9,  name:"Saus Egg Chs Biscuit",       cat:"Breakfast biscuits",        units:214,  rev:1054.61, avg:4.93 },
+  { rank:10, name:"Sausage On A Stick",          cat:"Sausage on a stick",        units:256,  rev:988.42,  avg:3.86 },
+  { rank:11, name:"Bacon Egg Chs Croissant",    cat:"Breakfast croissants",      units:190,  rev:933.10,  avg:4.91 },
+  { rank:12, name:"Chicken Strip Basket",        cat:"Chicken strips & baskets",  units:131,  rev:743.69,  avg:5.68 },
+  { rank:13, name:"Zing Chicken Wings 5pc",     cat:"Chicken bites & wings",     units:102,  rev:703.47,  avg:6.90 },
+  { rank:14, name:"Saus Biscuit",               cat:"Breakfast biscuits",        units:222,  rev:651.82,  avg:2.94 },
+  { rank:15, name:"Hatch Gr Chile Chs Burrito", cat:"Beef burritos",             units:169,  rev:648.31,  avg:3.84 },
+  { rank:16, name:"Cheeseburger",              cat:"Burgers",                   units:128,  rev:629.72,  avg:4.92 },
+  { rank:17, name:"Jalap Corn Dog",             cat:"Corn dogs",                 units:212,  rev:600.99,  avg:2.83 },
+  { rank:18, name:"Pepperoni Pizza Burrito",    cat:"Specialty burritos",        units:148,  rev:584.52,  avg:3.95 },
+  { rank:19, name:"Potato Wedges",              cat:"Potato sides",              units:167,  rev:554.84,  avg:3.32 },
+  { rank:20, name:"Mozz Chs Sticks",           cat:"Fried cheese snacks",       units:142,  rev:548.58,  avg:3.86 },
+  { rank:21, name:"Corn Dog",                  cat:"Corn dogs",                 units:185,  rev:498.28,  avg:2.69 },
+  { rank:22, name:"Cheese Curds",              cat:"Fried cheese snacks",       units:103,  rev:393.97,  avg:3.82 },
+  { rank:23, name:"Saus Egg Brkfst Burrito",  cat:"Breakfast burritos",        units:97,   rev:378.03,  avg:3.90 },
+  { rank:24, name:"Chicken Chimichanga",        cat:"Chicken strips & baskets",  units:93,   rev:368.07,  avg:3.96 },
+  { rank:25, name:"Buffalo Chicken Burrito",    cat:"Chicken flautas & wraps",   units:167,  rev:351.09,  avg:2.10 },
+  { rank:26, name:"Brd Chicken Sandwich",       cat:"Chicken sandwiches",        units:71,   rev:310.29,  avg:4.37 },
+  { rank:27, name:"Saus Croissant",            cat:"Breakfast croissants",      units:96,   rev:284.05,  avg:2.96 },
+  { rank:28, name:"Hotzzarella Chs Sticks",   cat:"Fried cheese snacks",       units:58,   rev:220.92,  avg:3.81 },
+  { rank:29, name:"Grld Cheeseburger",        cat:"Burgers",                   units:28,   rev:181.72,  avg:6.49 },
+  { rank:30, name:"Jalap Pot Munchers",        cat:"Potato sides",              units:46,   rev:177.54,  avg:3.86 },
+  { rank:31, name:"Egg Roll",                  cat:"Tacos & Mexican snacks",    units:55,   rev:164.45,  avg:2.99 },
+  { rank:32, name:"Catfish Basket",            cat:"Other",                     units:26,   rev:144.74,  avg:5.57 },
+  { rank:33, name:"Stuffed Jalap Howler",      cat:"Tacos & Mexican snacks",    units:35,   rev:132.65,  avg:3.79 },
+  { rank:34, name:"Bacon Egg Biscuit",         cat:"Breakfast biscuits",        units:30,   rev:131.70,  avg:4.39 },
+  { rank:35, name:"Zing Chicken Wings 10pc",  cat:"Chicken bites & wings",     units:11,   rev:129.89,  avg:11.81 },
+  { rank:36, name:"BBQ Sand",                  cat:"Burgers",                   units:28,   rev:127.72,  avg:4.56 },
+  { rank:37, name:"Fatboy Taquito",            cat:"Tacos & Mexican snacks",    units:41,   rev:97.11,   avg:2.37 },
+  { rank:38, name:"Prem Saus Brkfst Burrito", cat:"Breakfast burritos",        units:25,   rev:96.75,   avg:3.87 },
+  { rank:39, name:"Saus Egg Croissant",        cat:"Breakfast croissants",      units:20,   rev:89.80,   avg:4.49 },
+  { rank:40, name:"Bac & Egg Brkfst Burrito", cat:"Breakfast burritos",        units:22,   rev:87.78,   avg:3.99 },
+  { rank:41, name:"Saus Brkfst Burrito",      cat:"Breakfast burritos",        units:14,   rev:83.86,   avg:5.99 },
+  { rank:42, name:"Grld Bac Cheeseburger",    cat:"Burgers",                   units:10,   rev:79.90,   avg:7.99 },
+  { rank:43, name:"Bacon Egg Chs Biscuit",    cat:"Breakfast biscuits",        units:16,   rev:79.84,   avg:4.99 },
+  { rank:44, name:"Hamburger",                 cat:"Burgers",                   units:17,   rev:73.33,   avg:4.31 },
+  { rank:45, name:"Saus Egg Biscuit",         cat:"Breakfast biscuits",        units:16,   rev:71.84,   avg:4.49 },
+  { rank:46, name:"Bacon Round",               cat:"Sausage on a stick",        units:62,   rev:68.20,   avg:1.10 },
+  { rank:47, name:"Chicken Gizzards",          cat:"Other",                     units:18,   rev:64.82,   avg:3.60 },
+  { rank:48, name:"Mexiburger",                cat:"Burgers",                   units:11,   rev:54.89,   avg:4.99 },
+  { rank:49, name:"Hot Link",                  cat:"Sausage on a stick",        units:21,   rev:41.79,   avg:1.99 },
+  { rank:50, name:"Chicken Tenders 2pc",      cat:"Chicken strips & baskets",  units:13,   rev:38.87,   avg:2.99 },
+  { rank:51, name:"Grld Hamburger",            cat:"Burgers",                   units:6,    rev:35.94,   avg:5.99 },
+  { rank:52, name:"Grld Chicken Sand MTO",    cat:"Chicken sandwiches",        units:5,    rev:29.95,   avg:5.99 },
+  { rank:53, name:"Mild Tamales",              cat:"Tacos & Mexican snacks",    units:8,    rev:27.92,   avg:3.49 },
+  { rank:54, name:"Cheese Slice",              cat:"Other",                     units:55,   rev:27.00,   avg:0.49 },
+  { rank:55, name:"Brd Chicken Sand MTO",     cat:"Chicken sandwiches",        units:3,    rev:17.97,   avg:5.99 },
+  { rank:56, name:"Grld Grn Chile Burger",    cat:"Burgers",                   units:3,    rev:17.97,   avg:5.99 },
+  { rank:57, name:"Bacon Egg Croissant",       cat:"Breakfast croissants",      units:3,    rev:13.47,   avg:4.49 },
+  { rank:58, name:"Grld Chicken Sand",        cat:"Chicken sandwiches",        units:3,    rev:12.97,   avg:4.32 },
+  { rank:59, name:"Tator Kegs",               cat:"Potato sides",              units:2,    rev:7.98,    avg:3.99 },
+  { rank:60, name:"Hot Tamales",              cat:"Tacos & Mexican snacks",    units:2,    rev:6.98,    avg:3.49 },
+  { rank:61, name:"Bread Slice",              cat:"Other",                     units:57,   rev:6.55,    avg:0.11 },
+  { rank:62, name:"Bac Egg Chs Sand",        cat:"Burgers",                   units:1,    rev:5.99,    avg:5.99 },
+  { rank:63, name:"Grld Cheese",             cat:"Other",                     units:1,    rev:3.99,    avg:3.99 },
+];
+
+const CAT_DATA = [
+  { name:"Beef burritos",            skus:3,  units:3020, rev:9490.39, share:27.4, revPerSku:3163.5, avgPrice:3.14 },
+  { name:"Chicken flautas & wraps",  skus:2,  units:1344, rev:5006.34, share:14.5, revPerSku:2503.2, avgPrice:3.73 },
+  { name:"Chicken bites & wings",    skus:4,  units:742,  rev:3873.06, share:11.2, revPerSku:968.3,  avgPrice:5.22 },
+  { name:"Breakfast croissants",     skus:5,  units:680,  rev:3150.71, share:9.1,  revPerSku:630.1,  avgPrice:4.63 },
+  { name:"Sausage on a stick",       skus:4,  units:578,  rev:2247.03, share:6.5,  revPerSku:561.8,  avgPrice:3.89 },
+  { name:"Breakfast biscuits",       skus:5,  units:498,  rev:1989.81, share:5.7,  revPerSku:397.9,  avgPrice:4.00 },
+  { name:"Tacos & Mexican snacks",   skus:6,  units:459,  rev:1653.93, share:4.8,  revPerSku:275.7,  avgPrice:3.60 },
+  { name:"Burgers",                  skus:9,  units:232,  rev:1207.18, share:3.5,  revPerSku:134.1,  avgPrice:5.20 },
+  { name:"Fried cheese snacks",      skus:3,  units:303,  rev:1163.47, share:3.4,  revPerSku:387.8,  avgPrice:3.84 },
+  { name:"Chicken strips & baskets", skus:3,  units:237,  rev:1150.63, share:3.3,  revPerSku:383.5,  avgPrice:4.85 },
+  { name:"Corn dogs",                skus:2,  units:397,  rev:1099.27, share:3.2,  revPerSku:549.6,  avgPrice:2.77 },
+  { name:"Potato sides",             skus:3,  units:215,  rev:740.36,  share:2.1,  revPerSku:246.8,  avgPrice:3.44 },
+  { name:"Breakfast burritos",       skus:4,  units:158,  rev:646.42,  share:1.9,  revPerSku:161.6,  avgPrice:4.09 },
+  { name:"Specialty burritos",       skus:1,  units:148,  rev:584.52,  share:1.7,  revPerSku:584.5,  avgPrice:3.95 },
+  { name:"Chicken sandwiches",       skus:4,  units:82,   rev:371.18,  share:1.1,  revPerSku:92.8,   avgPrice:4.53 },
+  { name:"Other",                    skus:5,  units:157,  rev:247.10,  share:0.7,  revPerSku:49.4,   avgPrice:1.57 },
+];
+
+const CAT_COLORS = {
+  "Beef burritos":            "#6366f1",
+  "Chicken flautas & wraps":  "#10b981",
+  "Chicken bites & wings":    "#f59e0b",
+  "Breakfast croissants":     "#ef4444",
+  "Sausage on a stick":       "#8b5cf6",
+  "Breakfast biscuits":       "#ec4899",
+  "Tacos & Mexican snacks":   "#14b8a6",
+  "Burgers":                  "#f97316",
+  "Fried cheese snacks":      "#84cc16",
+  "Chicken strips & baskets": "#06b6d4",
+  "Corn dogs":                "#a855f7",
+  "Potato sides":             "#eab308",
+  "Breakfast burritos":       "#64748b",
+  "Specialty burritos":       "#d946ef",
+  "Chicken sandwiches":       "#0ea5e9",
+  "Other":                    "#94a3b8",
+};
+
+/* ═══════════════════════════════════
+   HELPERS
+═══════════════════════════════════ */
+const fmt  = v => '$' + v.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+const trunc = (s, n) => s.length > n ? s.slice(0, n-1) + '…' : s;
+const hex2rgba = (hex, a) => {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+};
+
+/* ═══════════════════════════════════
+   1. CATEGORY REVENUE — HORIZONTAL BAR
+═══════════════════════════════════ */
+const sortedCats = [...CAT_DATA].sort((a,b) => a.rev - b.rev);
+new Chart(document.getElementById('catRevenueChart'), {
+  type: 'bar',
+  data: {
+    labels: sortedCats.map(c => c.name),
+    datasets: [{
+      data: sortedCats.map(c => c.rev),
+      backgroundColor: sortedCats.map(c => CAT_COLORS[c.name]),
+      borderRadius: 5,
+      borderSkipped: false,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => ` ${fmt(ctx.raw)}  ·  ${CAT_DATA.find(c=>c.name===ctx.label)?.share}% share`,
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: '#f1f5f9' },
+        border: { display: false },
+        ticks: { callback: v => '$' + (v/1000).toFixed(0) + 'k', font: { size: 11 } }
+      },
+      y: {
+        grid: { display: false },
+        border: { display: false },
+        ticks: { font: { size: 11 } }
+      }
+    }
+  }
+});
+
+/* ═══════════════════════════════════
+   2. DONUT — Revenue Share
+═══════════════════════════════════ */
+new Chart(document.getElementById('donutChart'), {
+  type: 'doughnut',
+  data: {
+    labels: CAT_DATA.map(c => c.name),
+    datasets: [{
+      data: CAT_DATA.map(c => c.share),
+      backgroundColor: CAT_DATA.map(c => CAT_COLORS[c.name]),
+      borderWidth: 2,
+      borderColor: '#fff',
+      hoverOffset: 6,
+    }]
+  },
+  options: {
+    cutout: '66%',
+    plugins: {
+      legend: {
+        position: 'right',
+        labels: { boxWidth: 10, boxHeight: 10, padding: 8, font: { size: 10.5 } }
+      },
+      tooltip: {
+        callbacks: {
+          label: ctx => ` ${ctx.label}: ${ctx.raw}%`
+        }
+      }
+    }
+  }
+});
+
+/* ═══════════════════════════════════
+   3 & 4. TOP 5 / BOTTOM 5 (DYNAMIC)
+═══════════════════════════════════ */
+const top5Ctx = document.getElementById('top5Chart').getContext('2d');
+const bot5Ctx = document.getElementById('bot5Chart').getContext('2d');
+
+let top5Chart = new Chart(top5Ctx, {
+  type: 'bar',
+  data: { labels: [], datasets: [{ data: [], backgroundColor: [], borderRadius: 5, borderSkipped: false }] },
+  options: {
+    indexAxis: 'y',
+    plugins: { legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ` ${fmt(ctx.raw)}` } }
+    },
+    scales: {
+      x: {
+        grid: { color: '#f1f5f9' }, border: { display: false },
+        ticks: { callback: v => '$' + (v/1000).toFixed(1) + 'k', font: { size: 11 } }
+      },
+      y: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 11 } } }
+    }
+  }
+});
+
+let bot5Chart = new Chart(bot5Ctx, {
+  type: 'bar',
+  data: { labels: [], datasets: [{ data: [], backgroundColor: [], borderRadius: 5, borderSkipped: false }] },
+  options: {
+    indexAxis: 'y',
+    plugins: { legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ` ${fmt(ctx.raw)}` } }
+    },
+    scales: {
+      x: {
+        grid: { color: '#f1f5f9' }, border: { display: false },
+        ticks: { callback: v => '$' + v.toFixed(0), font: { size: 11 } }
+      },
+      y: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 11 } } }
+    }
+  }
+});
+
+/* ═══════════════════════════════════
+   5. SCATTER — Units vs Revenue (DYNAMIC)
+═══════════════════════════════════ */
+const scatterCtx = document.getElementById('scatterChart').getContext('2d');
+let scatterChart = new Chart(scatterCtx, {
+  type: 'scatter',
+  data: { datasets: [] },
+  options: {
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => {
+            const d = ctx.raw;
+            return [`${d.name}`, `Units: ${d.units}  ·  Rev: ${fmt(d.rev)}`, `Avg Price: $${d.avg}  ·  ${d.cat}`];
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        title: { display: true, text: 'Units Sold', font: { size: 11 } },
+        grid: { color: '#f1f5f9' }, border: { display: false },
+        ticks: { font: { size: 11 } }
+      },
+      y: {
+        title: { display: true, text: 'Revenue ($)', font: { size: 11 } },
+        grid: { color: '#f1f5f9' }, border: { display: false },
+        ticks: { callback: v => '$' + (v/1000).toFixed(0) + 'k', font: { size: 11 } }
+      }
+    }
+  }
+});
+
+/* ═══════════════════════════════════
+   6. BUBBLE — Category Efficiency
+═══════════════════════════════════ */
+new Chart(document.getElementById('bubbleChart'), {
+  type: 'bubble',
+  data: {
+    datasets: CAT_DATA.map(c => ({
+      label: c.name,
+      data: [{
+        x: c.avgPrice,
+        y: c.revPerSku,
+        r: Math.max(6, Math.sqrt(c.rev / 9490.39) * 42),
+      }],
+      backgroundColor: hex2rgba(CAT_COLORS[c.name], 0.65),
+      borderColor: CAT_COLORS[c.name],
+      borderWidth: 1.5,
+    }))
+  },
+  options: {
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => {
+            const c = CAT_DATA.find(d => d.name === ctx.dataset.label);
+            return [`${c.name}`, `Avg Price: $${c.avgPrice}  ·  Rev/SKU: $${c.revPerSku.toFixed(0)}`, `Revenue: ${fmt(c.rev)}`];
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        title: { display: true, text: 'Avg Price per Unit ($)', font: { size: 11 } },
+        grid: { color: '#f1f5f9' }, border: { display: false },
+        ticks: { callback: v => '$' + v.toFixed(2), font: { size: 11 } }
+      },
+      y: {
+        title: { display: true, text: 'Revenue per SKU ($)', font: { size: 11 } },
+        grid: { color: '#f1f5f9' }, border: { display: false },
+        ticks: { callback: v => '$' + v.toFixed(0), font: { size: 11 } }
+      }
+    }
+  }
+});
+
+/* ═══════════════════════════════════
+   7. AVG PRICE BAR — Vertical
+═══════════════════════════════════ */
+const priceSort = [...CAT_DATA].sort((a,b) => b.avgPrice - a.avgPrice);
+new Chart(document.getElementById('avgPriceChart'), {
+  type: 'bar',
+  data: {
+    labels: priceSort.map(c => c.name),
+    datasets: [{
+      label: 'Avg Price ($)',
+      data: priceSort.map(c => c.avgPrice),
+      backgroundColor: priceSort.map(c => CAT_COLORS[c.name]),
+      borderRadius: 5,
+      borderSkipped: false,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    plugins: { legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ` $${ctx.raw.toFixed(2)}` } }
+    },
+    scales: {
+      x: {
+        grid: { color: '#f1f5f9' }, border: { display: false },
+        ticks: { callback: v => '$' + v.toFixed(2), font: { size: 11 } }
+      },
+      y: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 10 } } }
+    }
+  }
+});
+
+/* ═══════════════════════════════════
+   8. RADAR — Top 6 Categories
+═══════════════════════════════════ */
+const TOP6 = CAT_DATA.slice(0, 6);
+const maxRev    = Math.max(...TOP6.map(c => c.rev));
+const maxUnits  = Math.max(...TOP6.map(c => c.units));
+const maxPrice  = Math.max(...TOP6.map(c => c.avgPrice));
+const maxRevSku = Math.max(...TOP6.map(c => c.revPerSku));
+
+new Chart(document.getElementById('radarChart'), {
+  type: 'radar',
+  data: {
+    labels: ['Revenue Score', 'Volume Score', 'Price Premium', 'SKU Efficiency'],
+    datasets: TOP6.map((c, i) => ({
+      label: c.name,
+      data: [
+        (c.rev      / maxRev)    * 100,
+        (c.units    / maxUnits)  * 100,
+        (c.avgPrice / maxPrice)  * 100,
+        (c.revPerSku/ maxRevSku) * 100,
+      ],
+      borderColor: CAT_COLORS[c.name],
+      backgroundColor: hex2rgba(CAT_COLORS[c.name], 0.08),
+      borderWidth: 2,
+      pointRadius: 3,
+      pointBackgroundColor: CAT_COLORS[c.name],
+    }))
+  },
+  options: {
+    scales: {
+      r: {
+        min: 0, max: 100,
+        ticks: { stepSize: 25, font: { size: 10 }, callback: v => v + '%' },
+        grid: { color: '#e2e8f0' },
+        pointLabels: { font: { size: 11, weight: '600' }, color: '#475569' },
+        angleLines: { color: '#e2e8f0' }
+      }
+    },
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: { boxWidth: 10, boxHeight: 10, padding: 10, font: { size: 10.5 } }
+      }
+    }
+  }
+});
+
+/* ═══════════════════════════════════
+   FILTER LOGIC
+═══════════════════════════════════ */
+function applyFilter(cat) {
+  const filtered = cat === 'All' ? ALL_ITEMS : ALL_ITEMS.filter(i => i.cat === cat);
+
+  // KPI update
+  const totalRev  = filtered.reduce((s, i) => s + i.rev, 0);
+  const totalUnits = filtered.reduce((s, i) => s + i.units, 0);
+  const avgPrice  = totalRev / totalUnits;
+  const skus      = filtered.length;
+  const cats      = new Set(filtered.map(i => i.cat)).size;
+
+  document.getElementById('kpi-rev').textContent    = fmt(totalRev);
+  document.getElementById('kpi-units').textContent  = totalUnits.toLocaleString();
+  document.getElementById('kpi-avg').textContent    = '$' + avgPrice.toFixed(2);
+  document.getElementById('kpi-skus').textContent   = skus;
+  document.getElementById('kpi-rev-sub').textContent   = cat === 'All' ? 'All 63 SKUs' : cat;
+  document.getElementById('kpi-units-sub').textContent = `${skus} SKU${skus!==1?'s':''} · ${cats} categor${cats!==1?'ies':'y'}`;
+  document.getElementById('kpi-avg-sub').textContent   = cat === 'All' ? 'Across all categories' : `Within ${cat}`;
+  document.getElementById('kpi-skus-sub').textContent  = cat === 'All' ? 'Across 16 categories' : `In ${cat}`;
+
+  // Filter badge
+  const badge = document.getElementById('filterBadge');
+  if (cat !== 'All') {
+    badge.textContent = cat;
+    badge.classList.add('active');
+  } else {
+    badge.classList.remove('active');
+  }
+
+  // Top/Bottom 5 labels
+  document.getElementById('topBotLabel').textContent =
+    `Top 5 & Bottom 5 Items — ${cat === 'All' ? 'All Categories' : cat} (by Revenue)`;
+  document.getElementById('top5sub').textContent = `Highest revenue · ${skus} item${skus!==1?'s':''} in view`;
+  document.getElementById('bot5sub').textContent = `Lowest revenue · ${skus} item${skus!==1?'s':''} in view`;
+
+  // Top 5
+  const sorted = [...filtered].sort((a,b) => b.rev - a.rev);
+  const top5   = sorted.slice(0, Math.min(5, sorted.length));
+  top5Chart.data.labels = top5.map(i => trunc(i.name, 26));
+  top5Chart.data.datasets[0].data = top5.map(i => i.rev);
+  top5Chart.data.datasets[0].backgroundColor = top5.map(i => CAT_COLORS[i.cat]);
+  top5Chart.update();
+
+  // Bottom 5
+  const bot5 = sorted.length >= 5
+    ? sorted.slice(-5).reverse()
+    : sorted.slice().reverse().slice(0, Math.min(5, sorted.length));
+  // Avoid overlap when few items
+  const usedNames = new Set(top5.map(i => i.name));
+  const bot5clean = bot5.filter(i => !usedNames.has(i.name)).slice(0, 5);
+
+  bot5Chart.data.labels = bot5clean.map(i => trunc(i.name, 26));
+  bot5Chart.data.datasets[0].data = bot5clean.map(i => i.rev);
+  bot5Chart.data.datasets[0].backgroundColor = bot5clean.map(i => hex2rgba(CAT_COLORS[i.cat], 0.55));
+  bot5Chart.update();
+
+  // Scatter update
+  document.getElementById('scatterSub').textContent =
+    `Each dot = one menu item · color = category · ${cat === 'All' ? 'All 63 items' : cat + ' (' + skus + ' items)'}`;
+
+  scatterChart.data.datasets = [{
+    data: filtered.map(i => ({
+      x: i.units, y: i.rev,
+      name: i.name, units: i.units, rev: i.rev, avg: i.avg, cat: i.cat
+    })),
+    backgroundColor: filtered.map(i => hex2rgba(CAT_COLORS[i.cat], 0.75)),
+    borderColor:     filtered.map(i => CAT_COLORS[i.cat]),
+    borderWidth: 1.5,
+    pointRadius: 7,
+    pointHoverRadius: 9,
+  }];
+  scatterChart.update();
+}
+
+function resetFilter() {
+  document.getElementById('catFilter').value = 'All';
+  applyFilter('All');
+}
+
+// Init
+applyFilter('All');
+</script>
+</body>
+</html>
